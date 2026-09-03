@@ -31,6 +31,11 @@ def decrement():
     position -= 1
     return
 
+def __init__():
+    machine.setup(
+        right_to(symbol.RIGHT_START, append(symbol.OUTPUT))
+    )
+
 def scan_to(symbol, direction):
     while not string[position] == symbol:
         if direction == move.LEFT:
