@@ -1,94 +1,58 @@
-string = "⊢0000000000000000+0000000000000000⊣"
-position = 0
-
 digit = {
-    "0" : "0",
-    "1" : "1",
+    "ZERO" : "0",
+    "ONE" : "1",
 }
 
 symbol = {
     "OUTPUT" : "‖",
     "LEFT_START" : "⊢",
     "RIGHT_START" : "⊣",
-    "BLANK" : "·"
+    "BLANK" : "·",
+    "ONE" : "X",
+    "ZERO" : "O",
 }
+
 operator = {
-    "ADD" : "+",
+    "PLUS" : "+",
 }
 
 move = {
     "LEFT" : "→",
     "RIGHT" : "←",
+    "HALT" : "⏹",
 }
 
-Tokens = digit | symbol | operator | move
+state = {
+    "START", "SETUP", "REWIND", "SETUP_2", "SETUP_2_ZERO", "SETUP_2_ONE", "FIND", "TO_COUNT", "INCREMENT", "RESTORE", "OUTPUT_RESET"
+}
 
-def increment():
-    position += 1
-    return
+machine = {}
 
-def decrement():
-    position -= 1
-    return
+def add(curr_state, curr_symbol, next_symbol, next_state, move):
+    machine.append(curr_state, curr_symbol, next_symbol, next_state, move)
 
 def __init__():
-    machine.setup(
-        right_to(symbol.RIGHT_START, append(symbol.OUTPUT))
-    )
-
-def scan_to(symbol, direction):
-    while not string[position] == symbol:
-        if direction == move.LEFT:
-            increment()
-        elif direction == move.RIGHT:
-            decrement()
-    return string[position]
-            
-def right_to(symbol, state):
-    while not string[position] == symbol:
-        increment()
-    return string[position]
-
-def append(new_symbol):
-    string[position] = new_symbol
-    return
-
-def find_and_mark(symbol, mark, end):
-    while not string[position] == "⊢":
-        decrement()
-    while not string[position] == end:
-        if string[position] == symbol:
-            string[position] == mark
-        increment()
-    return
-
-def successor():
-    while not string[position] == "⊢":
-        decrement()
-    while not string[position] == "‖":
-        increment()
-    while not string[position] in "01":
-        increment()
-    if string[position] in "0":
-        string[position] == "1"
-    elif string[position] in "1":
-        while string[position] == "1":
-            string[position] == "0"
-            increment()
-        if string[position] == "0":
-            string[position] == "1"
-        elif string[position] == "⊣":
-            decrement()
-            while not string[position] == "‖":
-                string[position] = "0"
-                decrement()
-    return
-
-def restore_marks(mark, symbol):
-    while not string[position] == "⊢":
-        decrement()
-    while not string[position] == "‖":
-        if string[position] == mark:
-            string[position] == symbol
-        increment()
-    return
+    add(state.START, symbol.LEFT_WALL, None, state.SETUP, move.RIGHT)
+    add(state.SETUP, symbol.RIGHT_WALL, symbol.OUTPUT, None, move.RIGHT)
+    add(state.SETUP, symbol.BLANK, symbol.RIGHT_WALL, state.SETUP_REWIND, move.LEFT)
+    add(state.SETUP_REWIND, symbol.LEFT_WALL, None, state.SETUP_2, move.RIGHT)
+    add(state.SETUP_2, digit.ONE, symbol.ONE, state.SETUP_2_ONE, move.RIGHT)
+    add(state.SETUP_2, digit.ZERO, symbol.ZERO, state.SETUP_2_ZERO, move.RIGHT)
+    add(state.SETUP_2_ONE, symbol.RIGHT_WALL, digit.ONE, None, move.RIGHT)
+    add(state.SETUP_2_ZERO, symbol.RIGHT_WALL, digit.ZERO, None, move.RIGHT)
+    add(state.SETUP_2_ONE, symbol.BLANK, symbol.RIGHT_WALL, state.SETUP_REWIND, move.LEFT)
+    add(state.SETUP_2_ZERO, symbol.BLANK, symbol.RIGHT_WALL, state.SETUP_REWIND, move.LEFT)
+    add(state.SETUP_2, operator.PLUS, None, state.FIND, move.RIGHT)
+    add(state.FIND, digit.ONE, symbol.ONE, state.TO_COUNT, move.RIGHT)
+    add(state.FIND, digit.ZERO, symbol.ZERO, None, move.RIGHT)
+    add(state.TO_COUNT, symbol.OUTPUT, None, state.INCREMENT, move.RIGHT)
+    add(state.INCREMENT, digit.ZERO, digit.ONE, state.SETUP_REWIND, move.LEFT)
+    add(state.SETUP_REWIND, symbol.PLUS, None, state.FIND, move.RIGHT)
+    add(state.INCREMENT, digit.ONE, digit.ZERO, None, move.RIGHT)
+    add(state.INCREMENT, symbol.RIGHT_WALL, None, state.OUTPUT_RESET, move.LEFT)
+    add(state.OUTPUT_RESET, digit, digit.ZERO, None, move.LEFT)
+    add(state.OUTPUT_RESET, symbol.OUTPUT, None, state.SETUP_REWIND, move.LEFT)
+    add(state.FIND, symbol.OUTPUT, None, state.RESTORE, move.RIGHT)
+    add(state.RESTORE, symbol.ONE, digit.ONE, None, move.LEFT)
+    add(state.RESTORE, symbol.ZERO, digit.ZERO, None, move.LEFT)
+    add(state.RESTORE, symbol.LEFT_WALL, None, state.DONE, move.HALT)
